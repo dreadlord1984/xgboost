@@ -1,64 +1,25 @@
-#' eXtreme Gradient Boosting (Tree) library
-#' 
-#' A simple interface for xgboost in R
-#' 
-#' @param data takes \code{matrix}, \code{dgCMatrix}, local data file or 
-#'   \code{xgb.DMatrix}. 
-#' @param label the response variable. User should not set this field,
-#    if data is local data file or  \code{xgb.DMatrix}. 
-#' @param params the list of parameters. Commonly used ones are:
-#' \itemize{
-#'   \item \code{objective} objective function, common ones are
-#'   \itemize{
-#'     \item \code{reg:linear} linear regression
-#'     \item \code{binary:logistic} logistic regression for classification
-#'   }
-#'   \item \code{eta} step size of each boosting step
-#'   \item \code{max.depth} maximum depth of the tree
-#'   \item \code{nthread} number of thread used in training, if not set, all threads are used
-#' }
-#'
-#'   See \url{https://github.com/tqchen/xgboost/wiki/Parameters} for 
-#'   further details. See also demo/ for walkthrough example in R.
-#' @param nrounds the max number of iterations
-#' @param verbose If 0, xgboost will stay silent. If 1, xgboost will print 
-#'   information of performance. If 2, xgboost will print information of both
-#'   performance and construction progress information
-#' @param ... other parameters to pass to \code{params}.
-#' 
-#' @details 
-#' This is the modeling function for xgboost.
-#' 
-#' Parallelization is automatically enabled if OpenMP is present.
-#' Number of threads can also be manually specified via "nthread" parameter
-#' 
-#' @examples
-#' data(agaricus.train, package='xgboost')
-#' data(agaricus.test, package='xgboost')
-#' train <- agaricus.train
-#' test <- agaricus.test
-#' bst <- xgboost(data = train$data, label = train$label, max.depth = 2, 
-#'                eta = 1, nround = 2,objective = "binary:logistic")
-#' pred <- predict(bst, test$data)
-#' 
+# Simple interface for training an xgboost model that wraps \code{xgb.train}.
+# Its documentation is combined with xgb.train.
+#
+#' @rdname xgb.train
 #' @export
-#' 
-xgboost <- function(data = NULL, label = NULL, params = list(), nrounds, 
-                    verbose = 1, ...) {
-  dtrain <- xgb.get.DMatrix(data, label)  
-  params <- append(params, list(...))
-  
-  if (verbose > 0) {
-    watchlist <- list(train = dtrain)
-  } else {
-    watchlist <- list()
-  }
-  
-  bst <- xgb.train(params, dtrain, nrounds, watchlist, verbose=verbose)
-  
-  return(bst)
-} 
+xgboost <- function(data = NULL, label = NULL, missing = NA, weight = NULL,
+                    params = list(), nrounds,
+                    verbose = 1, print_every_n = 1L, 
+                    early_stopping_rounds = NULL, maximize = NULL, 
+                    save_period = NULL, save_name = "xgboost.model",
+                    xgb_model = NULL, callbacks = list(), ...) {
 
+  dtrain <- xgb.get.DMatrix(data, label, missing, weight)
+
+  watchlist <- list(train = dtrain)
+
+  bst <- xgb.train(params, dtrain, nrounds, watchlist, verbose = verbose, print_every_n = print_every_n,
+                   early_stopping_rounds = early_stopping_rounds, maximize = maximize,
+                   save_period = save_period, save_name = save_name,
+                   xgb_model = xgb_model, callbacks = callbacks, ...)
+  return(bst)
+}
 
 #' Training part from Mushroom Data Set
 #' 
@@ -69,7 +30,7 @@ xgboost <- function(data = NULL, label = NULL, params = list(), nrounds,
 #' 
 #' \itemize{
 #'  \item \code{label} the label for each record
-#'  \item \code{data} a sparse Matrix of \code{dgCMatrix} class, with 127 columns.
+#'  \item \code{data} a sparse Matrix of \code{dgCMatrix} class, with 126 columns.
 #' }
 #'
 #' @references
@@ -96,7 +57,7 @@ NULL
 #' 
 #' \itemize{
 #'  \item \code{label} the label for each record
-#'  \item \code{data} a sparse Matrix of \code{dgCMatrix} class, with 127 columns.
+#'  \item \code{data} a sparse Matrix of \code{dgCMatrix} class, with 126 columns.
 #' }
 #'
 #' @references
@@ -111,5 +72,38 @@ NULL
 #' @name agaricus.test
 #' @usage data(agaricus.test)
 #' @format A list containing a label vector, and a dgCMatrix object with 1611 
-#' rows and 127 variables
+#' rows and 126 variables
+NULL
+
+# Various imports
+#' @importClassesFrom Matrix dgCMatrix dgeMatrix
+#' @importFrom Matrix cBind
+#' @importFrom Matrix colSums
+#' @importFrom Matrix sparse.model.matrix
+#' @importFrom Matrix sparseVector
+#' @importFrom data.table data.table
+#' @importFrom data.table is.data.table
+#' @importFrom data.table as.data.table
+#' @importFrom data.table :=
+#' @importFrom data.table rbindlist
+#' @importFrom data.table setkey
+#' @importFrom data.table setkeyv
+#' @importFrom data.table setnames
+#' @importFrom magrittr %>%
+#' @importFrom stringi stri_detect_regex
+#' @importFrom stringi stri_match_first_regex
+#' @importFrom stringi stri_replace_first_regex
+#' @importFrom stringi stri_replace_all_regex
+#' @importFrom stringi stri_split_regex
+#' @importFrom utils object.size str tail
+#' @importFrom stats predict
+#' @importFrom stats median
+#' @importFrom utils head
+#' @importFrom graphics barplot
+#' @importFrom graphics grid
+#' @importFrom graphics par
+#' @importFrom graphics title
+#' 
+#' @import methods
+#' @useDynLib xgboost, .registration = TRUE
 NULL
